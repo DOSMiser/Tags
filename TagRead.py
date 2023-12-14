@@ -14,7 +14,11 @@ import datetime
 from pupil_apriltags import Detector
 
 
-cap = cv2.VideoCapture(0)
+
+
+
+
+cap = cv2.VideoCapture(701)
  
 start = time.time()
 
@@ -38,7 +42,7 @@ with open(csv_file_path, mode='w', newline='') as file:
 
    
 
-def TagRead():
+def TagRead(SF,Scale_Shift):
     
   
 
@@ -81,18 +85,35 @@ def TagRead():
      Corners = tag.corners ;
      
      
+     vertices = np.array([[Corners[0]], [Corners[1]], [Corners[2]], [Corners[3]]], dtype=np.int32)
+     vertices = vertices.reshape((-1, 1, 2))
+    
+     Area = cv2.contourArea(vertices)
+
      
-     x = ((Corners[0,0] - Corners[0,1])**2)
-     y = ((Corners[1,0] - Corners[1,1])**2)
      
-     S = math.sqrt(x+y)
+
+     Area = (Area-Scale_Shift)*SF
      
-     direction = (math.tan((Corners[1,0] - Corners[1,1])/(Corners[0,0] - Corners[0,1])))*180/(math.pi*2)
+     xa = Corners[0,0]
+     xb = Corners[3,0]
+     ya = Corners[0,1]
+     yb = Corners[3,1]
+     
+     
+     xa = Corners[0,0]
+     xb = Corners[3,0]
+     ya = Corners[0,1]
+     yb = Corners[3,1]
+     
+     
+     
+     direction = math.atan2((ya-yb),(xa-xb))*180/3.14159
     
      
      t = time.time() - start
      
-     return [t,S,direction]
+     return [t,Area,direction]
 
 
 def write_to_csv(Data):
@@ -108,29 +129,51 @@ def write_to_csv(Data):
  ############################## Calibration #########################
  
  
-input("Press a key to set 0 Throttle")
+input("Press a key to set 0 Throttle (all the way forward)")
 
 
-D1 = TagRead()
+D1 = TagRead(1,0)
 
 while D1 is None:
     
   
-    D1 = TagRead()
+    D1 = TagRead(1,0)
     
-input("Press a key to set 100 Throttle")
+input("Press a key to set 100 Throttle(all the way back)")
 
-D2 = TagRead()
+D2 = TagRead(1,0)
 
 while D2 is None:
     
   
-    D2 = TagRead()
+    D2 = TagRead(1,0)
         
+
+###############Scalling#####################
+
+
+Scale_Shift = D2[1]
+
+SF = 100/(D1[1]-D2[1])
 
 
 
 input("Calibtation complete, click button to statrt colleting data")
+
+
+
+
+while True:
+        
+    Data = TagRead(SF,Scale_Shift)
+    
+    print(Data)
+    
+    if Data is not None:
+        write_to_csv(Data)
+
+
+
 
  
 
